@@ -1,10 +1,17 @@
 var express = require('express');
+var fs = require('fs');
 var http = require('http');
 var path = require('path');
 var spawn = require('child_process').spawn;
 var app = express();
 var platform = require('os').platform();
 var bib2xmlPath = platform === 'darwin' ? './bin/bib2xml-mac' : './bin/bib2xml';
+var formats = require('./formats');
+
+function binaryPath(input,output){
+  var binname = input + '2' + output;
+  return platform === 'darwin' ? './bin/' + binname + '-mac' : './bin/' + binname;
+}
 
 app.set('port', process.env.PORT || 3000);
 app.set('views', path.join(__dirname, 'views'));
@@ -23,6 +30,21 @@ app.use(express.static(path.join(__dirname, 'public')));
 if ('development' == app.get('env')) {
   app.use(express.errorHandler());
 }
+
+app.post('/convert', function(req, res){
+  var data = req.body;
+  var inFormat = formats[req.get('Content-Type')] || "xml";
+  var outFormat = formats[req.get('Accept')] || "xml";
+  var bin = binaryPath(inFormat,outFormat);
+  if (!fs.existsSync(bin)){
+    return res.send(500);
+  }
+  console.log(bin);
+  var converter = spawn(bin);
+  req.pipe(converter.stdin);
+  converter.stdout.pipe(res);
+  converter.stderr.pipe(process.stderr);
+});
 
 app.post('/bib2xml', function(req, res) {
   var bib = req.body;
