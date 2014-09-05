@@ -9,21 +9,21 @@ var formats = require('./formats');
 var DevNull = require('./devnull');
 var errPipe = process.env.NODE_ENV === 'test' ? new DevNull() : process.stderr;
 
-function binaryPath(input,output) {
+function binaryPath(input, output) {
   var binname = input + '2' + output;
   return platform === 'darwin' ? './bin/' + binname + '-mac' : './bin/' + binname;
 }
 
-function convertPipe(inFormat,outFormat,inStream,outStream) {
+function convertPipe(inFormat, outFormat, inStream, outStream) {
   if (inFormat == 'xml' || outFormat == 'xml') {
-    var bin = binaryPath(inFormat,outFormat);
+    var bin = binaryPath(inFormat, outFormat);
     var converter = spawn(bin);
     inStream.pipe(converter.stdin);
     converter.stdout.pipe(outStream);
     converter.stderr.pipe(errPipe);
   } else {
-    var converter1 = spawn(binaryPath(inFormat,'xml'));
-    var converter2 = spawn(binaryPath('xml',outFormat));
+    var converter1 = spawn(binaryPath(inFormat, 'xml'));
+    var converter2 = spawn(binaryPath('xml', outFormat));
     converter2.stderr.pipe(process.stderr);
     converter1.stderr.pipe(process.stderr);
     inStream.pipe(converter1.stdin);
