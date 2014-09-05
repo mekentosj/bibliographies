@@ -1,27 +1,27 @@
 var express = require('express');
 var fs = require('fs');
-var http = require('http');
 var path = require('path');
 var spawn = require('child_process').spawn;
 var app = express();
 var platform = require('os').platform();
 var bib2xmlPath = platform === 'darwin' ? './bin/bib2xml-mac' : './bin/bib2xml';
 var formats = require('./formats');
+var DevNull = require('./devnull');
+var errPipe = process.env.NODE_ENV === 'test' ? new DevNull() : process.stderr;
 
-function binaryPath(input,output){
+function binaryPath(input,output) {
   var binname = input + '2' + output;
   return platform === 'darwin' ? './bin/' + binname + '-mac' : './bin/' + binname;
 }
 
-function convertPipe(inFormat,outFormat,inStream,outStream){
-  if (inFormat == 'xml' || outFormat == 'xml'){
+function convertPipe(inFormat,outFormat,inStream,outStream) {
+  if (inFormat == 'xml' || outFormat == 'xml') {
     var bin = binaryPath(inFormat,outFormat);
-    console.log(bin);
     var converter = spawn(bin);
     inStream.pipe(converter.stdin);
     converter.stdout.pipe(outStream);
-    converter.stderr.pipe(process.stderr);
-  }else {
+    converter.stderr.pipe(errPipe);
+  } else {
     var converter1 = spawn(binaryPath(inFormat,'xml'));
     var converter2 = spawn(binaryPath('xml',outFormat));
     converter2.stderr.pipe(process.stderr);
@@ -36,7 +36,10 @@ app.set('port', process.env.PORT || 3000);
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 app.use(express.favicon());
-app.use(express.logger('dev'));
+
+if (process.env.NODE_ENV !== 'test') {
+  app.use(express.logger('dev'));
+}
 
 app.use(function(req, res, next) {
   req.setEncoding('utf8');
@@ -50,11 +53,11 @@ if ('development' == app.get('env')) {
   app.use(express.errorHandler());
 }
 
-app.post('/convert', function(req, res){
+app.post('/convert', function(req, res) {
   var data = req.body;
-  var inFormat = formats[req.get('Content-Type')] || "xml";
-  var outFormat = formats[req.get('Accept')] || "xml";
-  convertPipe(inFormat,outFormat,req,res);
+  var inFormat = formats[req.get('Content-Type')] || 'xml';
+  var outFormat = formats[req.get('Accept')] || 'xml';
+  convertPipe(inFormat, outFormat, req, res);
 });
 
 app.post('/bib2xml', function(req, res) {
@@ -65,6 +68,4 @@ app.post('/bib2xml', function(req, res) {
   bib2xml.stderr.pipe(process.stderr);
 });
 
-http.createServer(app).listen(app.get('port'), function(){
-  console.log('Express server listening on port:', app.get('port'));
-});
+module.exports = app;
