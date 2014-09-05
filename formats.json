@@ -1,6 +1,7 @@
 {
 "application/x-bibtex" : "bib",
 "application/x-endnote-refer" : "end",
+"application/x-endnote-library" : "end",
 "application/x-inst-for-scientific-info" : "isi",
 "application/x-Research-Info-Systems" : "ris",
 "application/mods+xml" : "xml"

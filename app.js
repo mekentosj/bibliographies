@@ -13,6 +13,25 @@ function binaryPath(input,output){
   return platform === 'darwin' ? './bin/' + binname + '-mac' : './bin/' + binname;
 }
 
+function convertPipe(inFormat,outFormat,inStream,outStream){
+  if (inFormat == 'xml' || outFormat == 'xml'){
+    var bin = binaryPath(inFormat,outFormat);
+    console.log(bin);
+    var converter = spawn(bin);
+    inStream.pipe(converter.stdin);
+    converter.stdout.pipe(outStream);
+    converter.stderr.pipe(process.stderr);
+  }else {
+    var converter1 = spawn(binaryPath(inFormat,'xml'));
+    var converter2 = spawn(binaryPath('xml',outFormat));
+    converter2.stderr.pipe(process.stderr);
+    converter1.stderr.pipe(process.stderr);
+    inStream.pipe(converter1.stdin);
+    converter1.stdout.pipe(converter2.stdin);
+    converter2.stdout.pipe(outStream);
+  }
+}
+
 app.set('port', process.env.PORT || 3000);
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
@@ -35,15 +54,7 @@ app.post('/convert', function(req, res){
   var data = req.body;
   var inFormat = formats[req.get('Content-Type')] || "xml";
   var outFormat = formats[req.get('Accept')] || "xml";
-  var bin = binaryPath(inFormat,outFormat);
-  if (!fs.existsSync(bin)){
-    return res.send(500);
-  }
-  console.log(bin);
-  var converter = spawn(bin);
-  req.pipe(converter.stdin);
-  converter.stdout.pipe(res);
-  converter.stderr.pipe(process.stderr);
+  convertPipe(inFormat,outFormat,req,res);
 });
 
 app.post('/bib2xml', function(req, res) {
