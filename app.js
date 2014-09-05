@@ -29,6 +29,7 @@ app.post('/bib2xml', function(req, res) {
   var bib2xml = spawn(bib2xmlPath);
   req.pipe(bib2xml.stdin);
   bib2xml.stdout.pipe(res);
+  bib2xml.stderr.pipe(process.stderr);
 });
 
 http.createServer(app).listen(app.get('port'), function(){
