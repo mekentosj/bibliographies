@@ -6,7 +6,10 @@
     "start": "node app.js"
   },
   "dependencies": {
+    "event-stream": "^3.1.7",
     "express": "3.4.8",
-    "jade": "*"
+    "jade": "*",
+    "node-xml2json": "^1.0.0",
+    "xml2json": "^0.5.1"
   }
 }
