@@ -1,7 +1,7 @@
-springer-hackday-bibutils
-=========================
+bibliographies
+==============
 
-This project is a sample web application that wraps the bibutils binaries.  The API is based on the `Content-Type` and `Accept` header:
+This project is a web application that wraps the bibutils binaries.  The API is based on the `Content-Type` and `Accept` header:
 
 Examples:
 
