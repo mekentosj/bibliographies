@@ -7,11 +7,11 @@
     "test": "NODE_ENV=test node ./node_modules/.bin/mocha"
   },
   "dependencies": {
+    "event-stream": "^3.1.7",
     "express": "3.4.8",
-    "jade": "*"
-  },
-  "devDependencies": {
-    "mocha": "^1.21.4",
-    "supertest": "^0.13.0"
+    "jade": "*",
+    "node-xml2json": "^1.0.0",
+    "underscore.string": "^3.2.2",
+    "xml2json": "^0.5.1"
   }
 }

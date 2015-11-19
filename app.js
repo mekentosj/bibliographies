@@ -6,33 +6,66 @@ var app = express();
 var platform = require('os').platform();
 var bib2xmlPath = platform === 'darwin' ? './bin/bib2xml-mac' : './bin/bib2xml';
 var formats = require('./formats');
-var DevNull = require('./devnull');
-var errPipe = process.env.NODE_ENV === 'test' ? new DevNull() : process.stderr;
+var PassThrough = require('stream').PassThrough;
+var xmlparser = require('xml2json');
+var es = require('event-stream');
+var papermill = require('./functions/papermill');
 
 function binaryPath(input, output) {
   var binname = input + '2' + output;
   return platform === 'darwin' ? './bin/' + binname + '-mac' : './bin/' + binname;
 }
 
-function convertPipe(inFormat, outFormat, inStream, outStream) {
-  if (inFormat == 'xml' || outFormat == 'xml') {
-    var bin = binaryPath(inFormat, outFormat);
-    var converter = spawn(bin);
-    inStream.pipe(converter.stdin);
-    converter.stdout.pipe(outStream);
-    converter.stderr.pipe(errPipe);
-  } else {
-    var converter1 = spawn(binaryPath(inFormat, 'xml'));
-    var converter2 = spawn(binaryPath('xml', outFormat));
-    converter2.stderr.pipe(process.stderr);
-    converter1.stderr.pipe(process.stderr);
-    inStream.pipe(converter1.stdin);
-    converter1.stdout.pipe(converter2.stdin);
-    converter2.stdout.pipe(outStream);
+function wrapSpawnedProcess(proc){
+  proc.stderr.pipe(process.stderr);
+  return es.duplex(proc.stdin,proc.stdout);
+}
+
+function fromModsStream(mime){
+  if (formats[mime] == 'xml'){
+    return new PassThrough();
+  }
+  if (formats[mime]){
+    return wrapSpawnedProcess(spawn(binaryPath('xml',formats[mime])));
+  }
+  if (mime == 'application/mods+json'){
+    var outStream = es.through();
+    var inStream = es.wait(function(err,input){
+      outStream.push(xmlparser.toJson(input.toString(),{reversible:true}));
+      outStream.end();
+    });
+    return es.duplex(inStream, outStream);
   }
 }
 
-app.set('port', process.env.PORT || 3000);
+function toModsStream(mime){
+  if (formats[mime] == 'xml'){
+    return new PassThrough();
+  }
+  if (formats[mime]){
+    return wrapSpawnedProcess(spawn(binaryPath(formats[mime],'xml')));
+  }
+  if (mime == 'application/mods+json'){
+    var outStream = es.through();
+    var inStream = es.wait(function(err,input){
+      outStream.push(xmlparser.toXml(input.toString()));
+      outStream.end();
+    });
+    return es.duplex(inStream, outStream);
+  }
+  if (mime == 'application/papers+json'){
+    var outStream = es.through();
+    var inStream = es.wait(function(err,input){
+      var mods = papermill.papermillToMODS(JSON.parse(input.toString()));
+      var modsXML = xmlparser.toXml(mods);
+      outStream.push(modsXML);
+      outStream.end();
+    });
+    return es.duplex(inStream, outStream);
+  }
+}
+
+app.set('port', process.env.PORT || 3001);
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 app.use(express.favicon());
@@ -53,19 +86,16 @@ if ('development' == app.get('env')) {
   app.use(express.errorHandler());
 }
 
-app.post('/convert', function(req, res) {
-  var data = req.body;
-  var inFormat = formats[req.get('Content-Type')] || 'xml';
-  var outFormat = formats[req.get('Accept')] || 'xml';
-  convertPipe(inFormat, outFormat, req, res);
-});
-
-app.post('/bib2xml', function(req, res) {
-  var bib = req.body;
-  var bib2xml = spawn(bib2xmlPath);
-  req.pipe(bib2xml.stdin);
-  bib2xml.stdout.pipe(res);
-  bib2xml.stderr.pipe(process.stderr);
+app.post('/convert', function(req, res){
+  var inStream = toModsStream(req.get('Content-Type'));
+  if (!inStream){
+    return res.status(400).send("Can't handle " + req.get('Content-Type') + " input");
+  }
+  var outStream = fromModsStream(req.get('Accept'));
+  if (!outStream){
+    return res.status(400).send("Can't handle " + req.get('Accept') + " output");
+  }
+  req.pipe(inStream).pipe(outStream).pipe(res);
 });
 
 module.exports = app;

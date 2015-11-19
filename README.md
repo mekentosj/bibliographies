@@ -1,20 +1,9 @@
-bibliographies
-==============
+## Bibliographies
 
-This project is a web application that wraps the bibutils binaries.  The API is based on the `Content-Type` and `Accept` header:
-
-Examples:
-
-* Send bibtex, get back XML
-* Send endnote, get XML
-* Send RSI, get back endnote
-
-### Usage
-
-Convert bibtex to RIS:
+Example usage:
 
 ```
-curl -i -X POST --data-binary @./test.bib -H "Accept: application/x-Research-Info-Systems" -H "Content-Type: application/x-bibtex" http://springer-hackday-bibutils.herokuapp.com/convert
+curl -i -X POST --data-binary @/Users/alex/Desktop/archive.json -H "Accept: application/x-bibtex" -H "Content-Type: application/papers+json" http://localhost:3001/convert
 ```
 
-Change the `Accept` header to get a different format.  The formats are in `formats.json`.
+Given an array of papermill publications (see `sample-data/`).
