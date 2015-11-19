@@ -14,7 +14,6 @@ var papermill = require('./functions/papermill');
 
 function binaryPath(input,output){
   var binname = input + '2' + output;
-  console.log("got binary", binname);
   return platform === 'darwin' ? './bin/' + binname + '-mac' : './bin/' + binname;
 }
 
@@ -42,7 +41,6 @@ function fromModsStream(mime){
 
 function toModsStream(mime){
   if (formats[mime] == 'xml'){
-    console.log("CAT");
     return new PassThrough();
   }
   if (formats[mime]){
@@ -60,9 +58,7 @@ function toModsStream(mime){
     var outStream = es.through();
     var inStream = es.wait(function(err,input){
       var mods = papermill.papermillToMODS(JSON.parse(input.toString()));
-      console.log("SHOULD BE MODS", mods);
       var modsXML = xmlparser.toXml(mods);
-      console.log("SHOULD BE MODS XML", modsXML);
       outStream.push(modsXML);
       outStream.end();
     });
@@ -70,7 +66,7 @@ function toModsStream(mime){
   }
 }
 
-app.set('port', process.env.PORT || 3000);
+app.set('port', process.env.PORT || 3001);
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 app.use(express.favicon());
@@ -103,5 +99,3 @@ app.post('/convert', function(req, res){
 http.createServer(app).listen(app.get('port'), function(){
   console.log('Express server listening on port:', app.get('port'));
 });
-
-

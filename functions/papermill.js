@@ -17,7 +17,6 @@ function authorToMods(author,role){
     if (author.lastName){ modsA.namePart.push({type:'family','$t':author.lastName}); }
   }
   modsA.role = {roleTerm:{authority:'marcrelator',type:'text','$t':role}};
-  console.log(modsA);
   return modsA;
 }
 
@@ -102,10 +101,8 @@ function papermillPubToMods(publication){
   ['authors','photographers','editors','translators'].forEach(function(role){
     var authors = publication[role];
     if (authors){
-      console.log("GOT AUTHORS");
       role = role.replace(/s$/,'');
       mods.name = mods.name.concat( authors.map(function(x){return authorToMods(x,role)}));
-      console.log(mods.name);
     }
   });
   if (publication.publication_date){
@@ -147,7 +144,6 @@ function papermillPubToMods(publication){
     if (genre){mods.genre = genre}
   }
 
-  console.log(mods);
   return mods;
 }
 
