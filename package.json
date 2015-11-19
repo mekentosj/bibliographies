@@ -10,6 +10,7 @@
     "express": "3.4.8",
     "jade": "*",
     "node-xml2json": "^1.0.0",
+    "underscore.string": "^3.2.2",
     "xml2json": "^0.5.1"
   }
 }
